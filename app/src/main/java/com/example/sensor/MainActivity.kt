@@ -94,6 +94,31 @@ class MainActivity : ComponentActivity() {
                             values = value
                         )
                     }
+                    item {
+
+                        val value = remember{ mutableStateOf("rotation value : 0f")}
+                        val rotationVectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+                        val rotationVectorListener = object : SensorEventListener{
+                            override fun onSensorChanged(p0: SensorEvent?) {
+                                value.value = " rotation value : ${p0?.values?.get(0) ?: 0f}"
+                            }
+
+                            override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
+                            }
+
+                        }
+
+                        SensorCompose(
+                            sensorName = "Rotation Vector sensor",
+                            onStartClick = {
+                                sensorManager.registerListener(rotationVectorListener,rotationVectorSensor,SensorManager.SENSOR_DELAY_NORMAL)
+                            },
+                            onStopClick = {
+                                sensorManager.unregisterListener(rotationVectorListener)
+                            },
+                            values = value
+                        )
+                    }
                 })
             }
         }
