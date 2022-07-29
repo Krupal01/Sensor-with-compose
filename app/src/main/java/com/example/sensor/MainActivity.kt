@@ -1,43 +1,104 @@
 package com.example.sensor
 
+import android.graphics.ColorSpace
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.sensor.ui.theme.SensorTheme
+
+const val SENSOR_ERROR = "Sensor not found"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+
+        val proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
+
         setContent {
             SensorTheme {
                 // A surface container using the 'background' color from the theme
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colors.background
-                ) {
-                    Greeting("Android")
-                }
+                LazyColumn(content = {
+                    item {
+                        val proximitySensorValue = remember{ mutableStateOf("Proxy value : 0f ")}
+                        val proximitySensorListener = object :  SensorEventListener{
+                            override fun onSensorChanged(p0: SensorEvent?) {
+                                proximitySensorValue.value = "proxy value : ${p0?.values?.get(0) ?: 0f}"  // p0.vales[0] with null safety
+                            }
+                            override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
+
+                            }
+                        }
+                        SensorCompose(
+                            sensorName = "Proximity Sensor",
+                            onStartClick = {
+                                 if (proximitySensor != null){
+                                     sensorManager.registerListener(proximitySensorListener,proximitySensor,SensorManager.SENSOR_DELAY_NORMAL)
+                                 }else{
+                                     Toast.makeText(this@MainActivity, SENSOR_ERROR,Toast.LENGTH_LONG).show()
+                                 }
+                            },
+                            onStopClick = {
+                                sensorManager.unregisterListener(proximitySensorListener)
+                            },
+                            values = proximitySensorValue
+                        )
+                    }
+                })
             }
         }
     }
 }
 
 @Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
-}
+fun SensorCompose(
+    sensorName : String,
+    onStartClick : ()->Unit,
+    onStopClick : ()->Unit,
+    values : MutableState<String> = mutableStateOf("")
+) {
 
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    SensorTheme {
-        Greeting("Android")
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(all = 10.dp)
+            .padding(all = 10.dp)
+            .border(border = BorderStroke(width = 2.dp, color = Color.Black)),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(text = sensorName , fontSize = 20.sp)
+        Button(onClick = onStartClick) {
+            Text(text = "start Sensor")
+        }
+        Button(onClick = onStopClick) {
+            Text(text = "stop Sensor")
+        }
+        Text(text = values.value)
     }
 }
