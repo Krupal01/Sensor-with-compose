@@ -38,7 +38,6 @@ class MainActivity : ComponentActivity() {
 
         val sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
 
-        val proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
 
         setContent {
             SensorTheme {
@@ -46,6 +45,7 @@ class MainActivity : ComponentActivity() {
                 LazyColumn(content = {
                     item {
                         val proximitySensorValue = remember{ mutableStateOf("Proxy value : 0f ")}
+                        val proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
                         val proximitySensorListener = object :  SensorEventListener{
                             override fun onSensorChanged(p0: SensorEvent?) {
                                 proximitySensorValue.value = "proxy value : ${p0?.values?.get(0) ?: 0f}"  // p0.vales[0] with null safety
@@ -67,6 +67,31 @@ class MainActivity : ComponentActivity() {
                                 sensorManager.unregisterListener(proximitySensorListener)
                             },
                             values = proximitySensorValue
+                        )
+                    }
+                    item {
+
+                        val value = remember{ mutableStateOf("gyro value : 0f")}
+                        val gyroScopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+                        val gyroSensorListener = object : SensorEventListener{
+                            override fun onSensorChanged(p0: SensorEvent?) {
+                                value.value = "gyro value : ${p0?.values?.get(0) ?: 0f}"
+                            }
+
+                            override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
+                            }
+
+                        }
+
+                        SensorCompose(
+                            sensorName = "Gyro Scope",
+                            onStartClick = {
+                                sensorManager.registerListener(gyroSensorListener,gyroScopeSensor,SensorManager.SENSOR_DELAY_NORMAL)
+                            },
+                            onStopClick = {
+                                sensorManager.unregisterListener(gyroSensorListener)
+                            },
+                            values = value
                         )
                     }
                 })
