@@ -40,128 +40,116 @@ class MainActivity : ComponentActivity() {
         setContent {
             SensorTheme {
                 // A surface container using the 'background' color from the theme
+
+                //Sensor values
+                val proximitySensorValue = remember{ mutableStateOf("Proxy value : 0f ")}
+                val gyroValue = remember{ mutableStateOf("gyro value : 0f")}
+                val rotationVectorValue = remember{ mutableStateOf("rotation value : 0f")}
+                val accelerometerValue = remember{ mutableStateOf("X : 0f, Y : 0f, Z : 0f")}
+
+                val sensorListener = object: SensorEventListener{
+                    override fun onSensorChanged(p0: SensorEvent?) {
+                        if (p0!=null){
+                            when(p0.sensor.type){
+                                Sensor.TYPE_PROXIMITY->{
+                                    proximitySensorValue.value = "proxy value : ${p0.values[0]}"
+                                }
+
+                                Sensor.TYPE_GYROSCOPE->{
+                                    gyroValue.value = "gyro value : ${p0.values[0]}"
+                                }
+
+                                Sensor.TYPE_ROTATION_VECTOR->{
+                                    // values to degree
+                                    val rotationMatrix = FloatArray(16)
+                                    SensorManager.getRotationMatrixFromVector(rotationMatrix, p0.values)
+                                    // map from 3d to xz 2d
+                                    val remappedRotationMatrix = FloatArray(16)
+                                    SensorManager.remapCoordinateSystem(
+                                        rotationMatrix,
+                                        SensorManager.AXIS_X,
+                                        SensorManager.AXIS_Z,
+                                        remappedRotationMatrix
+                                    )
+                                    // convert to orientation
+                                    val orientations = FloatArray(3)
+                                    SensorManager.getOrientation(remappedRotationMatrix, orientations)
+                                    for (i in 0..2) {
+                                        orientations[i] =
+                                            Math.toDegrees(orientations[i].toDouble()).toFloat()
+                                    }
+                                    // get degree angle
+                                    rotationVectorValue.value = " rotation value : ${orientations[2]}"
+                                }
+
+                                Sensor.TYPE_ACCELEROMETER->{
+                                    accelerometerValue.value = "X : ${p0.values[0]}, Y : ${p0.values[1]}, Z : ${p0.values[2]}"
+                                }
+                            }
+                        }
+                    }
+                    override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
+                    }
+                }
+
                 LazyColumn(content = {
 //                    items(sensorManager.getSensorList(Sensor.TYPE_ALL)){item : Sensor ->
 //                        Text(text = item.name)
 //                    }
                     item {
-                        val proximitySensorValue = remember{ mutableStateOf("Proxy value : 0f ")}
                         val proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
-                        val proximitySensorListener = object :  SensorEventListener{
-                            override fun onSensorChanged(p0: SensorEvent?) {
-                                proximitySensorValue.value = "proxy value : ${p0?.values?.get(0) ?: 0f}"  // p0.vales[0] with null safety
-                            }
-                            override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
-
-                            }
-                        }
                         SensorCompose(
                             sensorName = "Proximity Sensor",
                             onStartClick = {
                                  if (proximitySensor != null){
-                                     sensorManager.registerListener(proximitySensorListener,proximitySensor,SensorManager.SENSOR_DELAY_NORMAL)
+                                     sensorManager.registerListener(sensorListener,proximitySensor,SensorManager.SENSOR_DELAY_NORMAL)
                                  }else{
                                      Toast.makeText(this@MainActivity, SENSOR_ERROR,Toast.LENGTH_LONG).show()
                                  }
                             },
                             onStopClick = {
-                                sensorManager.unregisterListener(proximitySensorListener)
+                                sensorManager.unregisterListener(sensorListener,proximitySensor)
                             },
                             values = proximitySensorValue
                         )
                     }
                     item {
-
-                        val value = remember{ mutableStateOf("gyro value : 0f")}
                         val gyroScopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-                        val gyroSensorListener = object : SensorEventListener{
-                            override fun onSensorChanged(p0: SensorEvent?) {
-                                value.value = "gyro value : ${p0?.values?.get(0) ?: 0f}"
-                            }
-
-                            override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
-                            }
-
-                        }
-
                         SensorCompose(
                             sensorName = "Gyro Scope",
                             onStartClick = {
-                                sensorManager.registerListener(gyroSensorListener,gyroScopeSensor,SensorManager.SENSOR_DELAY_NORMAL)
+                                sensorManager.registerListener(sensorListener,gyroScopeSensor,SensorManager.SENSOR_DELAY_NORMAL)
                             },
                             onStopClick = {
-                                sensorManager.unregisterListener(gyroSensorListener)
+                                sensorManager.unregisterListener(sensorListener,gyroScopeSensor)
                             },
-                            values = value
+                            values = gyroValue
                         )
                     }
                     item {
-
-                        val value = remember{ mutableStateOf("rotation value : 0f")}
                         val rotationVectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
-                        val rotationVectorListener = object : SensorEventListener{
-                            override fun onSensorChanged(p0: SensorEvent?) {
-                                // values to degree
-                                val rotationMatrix = FloatArray(16)
-                                SensorManager.getRotationMatrixFromVector(rotationMatrix, p0?.values)
-                                // map from 3d to xz 2d
-                                val remappedRotationMatrix = FloatArray(16)
-                                SensorManager.remapCoordinateSystem(
-                                    rotationMatrix,
-                                    SensorManager.AXIS_X,
-                                    SensorManager.AXIS_Z,
-                                    remappedRotationMatrix
-                                )
-                                // convert to orientation
-                                val orientations = FloatArray(3)
-                                SensorManager.getOrientation(remappedRotationMatrix, orientations)
-                                for (i in 0..2) {
-                                    orientations[i] =
-                                        Math.toDegrees(orientations[i].toDouble()).toFloat()
-                                }
-                                // get degree angle
-                                value.value = " rotation value : ${orientations[2]}"
-                            }
-
-                            override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
-                            }
-
-                        }
-
                         SensorCompose(
                             sensorName = "Rotation Vector sensor",
                             onStartClick = {
-                                sensorManager.registerListener(rotationVectorListener,rotationVectorSensor,SensorManager.SENSOR_DELAY_NORMAL)
+                                sensorManager.registerListener(sensorListener,rotationVectorSensor,SensorManager.SENSOR_DELAY_NORMAL)
                             },
                             onStopClick = {
-                                sensorManager.unregisterListener(rotationVectorListener)
+                                sensorManager.unregisterListener(sensorListener,rotationVectorSensor)
                             },
-                            values = value
+                            values = rotationVectorValue
                         )
                     }
                     item {
-
-                        val value = remember{ mutableStateOf("X : 0f, Y : 0f, Z : 0f")}
                         val accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-                        val accelerometerListener = object : SensorEventListener{
-                            override fun onSensorChanged(p0: SensorEvent?) {
-                                value.value = "X : ${p0?.values?.get(0) ?: 0f}, Y : ${p0?.values?.get(1) ?: 0f}, Z : ${p0?.values?.get(2) ?: 0f}"
-                            }
-
-                            override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
-                            }
-
-                        }
-
                         SensorCompose(
                             sensorName = "Accelerometer Sensor",
                             onStartClick = {
-                                sensorManager.registerListener(accelerometerListener,accelerometerSensor,SensorManager.SENSOR_DELAY_NORMAL)
+                                sensorManager.registerListener(sensorListener,accelerometerSensor,SensorManager.SENSOR_DELAY_NORMAL)
                             },
                             onStopClick = {
-                                sensorManager.unregisterListener(accelerometerListener)
+                                sensorManager.unregisterListener(sensorListener,accelerometerSensor)
                             },
-                            values = value
+                            values = accelerometerValue
                         )
                     }
 
