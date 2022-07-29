@@ -139,6 +139,31 @@ class MainActivity : ComponentActivity() {
                             values = value
                         )
                     }
+                    item {
+
+                        val value = remember{ mutableStateOf("X : 0f, Y : 0f, Z : 0f")}
+                        val accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+                        val accelerometerListener = object : SensorEventListener{
+                            override fun onSensorChanged(p0: SensorEvent?) {
+                                value.value = "X : ${p0?.values?.get(0) ?: 0f}, Y : ${p0?.values?.get(1) ?: 0f}, Z : ${p0?.values?.get(2) ?: 0f}"
+                            }
+
+                            override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
+                            }
+
+                        }
+
+                        SensorCompose(
+                            sensorName = "Accelerometer Sensor",
+                            onStartClick = {
+                                sensorManager.registerListener(accelerometerListener,accelerometerSensor,SensorManager.SENSOR_DELAY_NORMAL)
+                            },
+                            onStopClick = {
+                                sensorManager.unregisterListener(accelerometerListener)
+                            },
+                            values = value
+                        )
+                    }
 
                 })
             }
