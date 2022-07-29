@@ -1,6 +1,5 @@
 package com.example.sensor
 
-import android.graphics.ColorSpace
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -10,14 +9,12 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -44,9 +41,9 @@ class MainActivity : ComponentActivity() {
             SensorTheme {
                 // A surface container using the 'background' color from the theme
                 LazyColumn(content = {
-                    items(sensorManager.getSensorList(Sensor.TYPE_ALL)){item : Sensor ->
-                        Text(text = item.name)
-                    }
+//                    items(sensorManager.getSensorList(Sensor.TYPE_ALL)){item : Sensor ->
+//                        Text(text = item.name)
+//                    }
                     item {
                         val proximitySensorValue = remember{ mutableStateOf("Proxy value : 0f ")}
                         val proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
@@ -104,7 +101,26 @@ class MainActivity : ComponentActivity() {
                         val rotationVectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
                         val rotationVectorListener = object : SensorEventListener{
                             override fun onSensorChanged(p0: SensorEvent?) {
-                                value.value = " rotation value : ${p0?.values?.get(0) ?: 0f}"
+                                // values to degree
+                                val rotationMatrix = FloatArray(16)
+                                SensorManager.getRotationMatrixFromVector(rotationMatrix, p0?.values)
+                                // map from 3d to xz 2d
+                                val remappedRotationMatrix = FloatArray(16)
+                                SensorManager.remapCoordinateSystem(
+                                    rotationMatrix,
+                                    SensorManager.AXIS_X,
+                                    SensorManager.AXIS_Z,
+                                    remappedRotationMatrix
+                                )
+                                // convert to orientation
+                                val orientations = FloatArray(3)
+                                SensorManager.getOrientation(remappedRotationMatrix, orientations)
+                                for (i in 0..2) {
+                                    orientations[i] =
+                                        Math.toDegrees(orientations[i].toDouble()).toFloat()
+                                }
+                                // get degree angle
+                                value.value = " rotation value : ${orientations[2]}"
                             }
 
                             override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
@@ -123,6 +139,7 @@ class MainActivity : ComponentActivity() {
                             values = value
                         )
                     }
+
                 })
             }
         }
