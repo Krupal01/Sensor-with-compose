@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +44,9 @@ class MainActivity : ComponentActivity() {
             SensorTheme {
                 // A surface container using the 'background' color from the theme
                 LazyColumn(content = {
+                    items(sensorManager.getSensorList(Sensor.TYPE_ALL)){item : Sensor ->
+                        Text(text = item.name)
+                    }
                     item {
                         val proximitySensorValue = remember{ mutableStateOf("Proxy value : 0f ")}
                         val proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
